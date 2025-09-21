@@ -11,24 +11,14 @@ import dashboardRoutes from "./routes/salesdashboard.js";
 import chatbotRoutes from "./routes/chatbotRoutes.js";
 import dotenv from 'dotenv';
 import cors from 'cors';
-
+dotenv.config();
 
 //mongodb+srv://admin:123@cluster0.wgv5e81.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
-dotenv.config();
+
 const app = express();
 app.use(cors({
   origin: process.env.CLIENT_ORIGIN
 }));
-
-/*mongoose.connect("mongodb+srv://admin:123@cluster0.wgv5e81.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0").then(
-  () => {
-    console.log("Connected to the database");
-  }
-).catch(
-  () => {
-    console.log("Connection failed");
-  }
-)*/
 
 mongoose.connect(process.env.MONGO_URL).then(
   () => {
