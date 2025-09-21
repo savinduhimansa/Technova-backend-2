@@ -8,12 +8,36 @@ const productScheme = new mongoose.Schema({
   },
   name: {
     type: String,
-    required: true
+    trim: true,
+    required: true,
+    unique: true
   },
+   brand:{
+        type: String,
+        required: true,
+        trim: true,
+    },
   altNames: {
     type: [String],
     default: []
   },
+  category: {
+      type: String,
+      required: true,
+      enum: {
+        values: [
+          'Laptops',
+          'Desktops',
+          'Monitors',
+          'Keyboards',
+          'Mice',
+          'Headsets',
+          'Graphics Cards',
+          'CPUs',
+          'Storage',
+        ]
+      }
+    },
   price: {
     type: Number,
     required: true
@@ -35,6 +59,10 @@ const productScheme = new mongoose.Schema({
     type: Number,
     required: true
   },
+  ratingsQuantity: {
+      type: Number,
+      default: 0,
+    } 
 })
 
 const Product = mongoose.model("products",productScheme);
