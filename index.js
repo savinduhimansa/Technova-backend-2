@@ -69,7 +69,7 @@ app.use("/api/deliveries", deliveryRoutes);
 app.use("/api/couriers", courierRoutes);
 app.use("/api/invoices",invoiceRoute);
 app.use("/api/dashboard", dashboardRoutes);
-app.use("/api/users", userRoutes);
+
 
 
 
