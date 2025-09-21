@@ -5,8 +5,12 @@ import verifyJWT from './middleware/auth.js';
 import productRouter from './routes/productRouter.js';
 import dotenv from "dotenv";
 dotenv.config();
+import cors from "cors";
+import partsRouter from './routes/partsRouter.js';
 
 const app = express();
+
+app.use(cors());
 
 mongoose.connect(process.env.MONGO_URL).then(
   () => {
@@ -22,7 +26,8 @@ app.use(bodyParser.json());
 
 app.use(verifyJWT);
 
-app.use("/api/product", productRouter)
+app.use("/api/product", productRouter);
+app.use("/api/parts", partsRouter);
 
 app.listen(5001, 
   () => {
