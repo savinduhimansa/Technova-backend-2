@@ -8,6 +8,8 @@ import deliveryRoutes from "./routes/deliveries.js";
 import courierRoutes from "./routes/couriers.js";
 import invoiceRoute from "./routes/invoices.js";
 import dashboardRoutes from "./routes/salesdashboard.js";
+import userRoutes from "./routes/userRouters.js";
+import publicOrderRoutes from "./routes/orders.public.js";
 import chatbotRoutes from "./routes/chatbotRoutes.js";
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -31,7 +33,7 @@ mongoose.connect(process.env.MONGO_URL).then(
 )
 
 app.use(bodyParser.json());
-
+app.use("/api/public/orders", publicOrderRoutes);
 app.use("/api/chatbot", chatbotRoutes);
 
 app.use(verifyJWT);
@@ -44,6 +46,7 @@ app.use("/api/deliveries", deliveryRoutes);
 app.use("/api/couriers", courierRoutes);
 app.use("/api/invoices",invoiceRoute);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/users", userRoutes);
 
 
 app.listen(5001, 
