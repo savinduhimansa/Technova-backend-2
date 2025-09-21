@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import bcrypt from "bcrypt"; // <-- Add this import
+
 
 const userSchema = new mongoose.Schema({
     userId: {
@@ -21,7 +23,7 @@ const userSchema = new mongoose.Schema({
     role: {
         type: String,
         required: true,
-        enum: ["user", "admin","salesmanager"], // Only allow "user" or "admin" or "salesmanager"
+        enum: ["user", "admin"], // Only allow "user" or "admin"
         default: "user" 
     },
     password: {
@@ -49,16 +51,37 @@ const userSchema = new mongoose.Schema({
     otpExpires: Date,
     lastLogin: { 
         type: Date
-     } 
+     } ,
+     passwordResetToken: String,
+    passwordResetExpires: Date
 });
 
-userSchema.pre("save", async function (next) {
-  if (!this.userId) {
-    const lastUser = await this.constructor.findOne().sort({ userId: -1 });
-    this.userId = lastUser ? lastUser.userId + 1 : 1;
-  }
-  next();
+userSchema.pre('save', async function (next) {
+    if (this.isNew && !this.userId) { // Check if it's a new document and userId is not already set
+        try {
+            const lastUser = await this.constructor.findOne({}, {}, { sort: { 'userId': -1 } }).exec();
+            if (lastUser && lastUser.userId) {
+                this.userId = lastUser.userId + 1;
+            } else {
+                this.userId = 1;
+            }
+        } catch (err) {
+            return next(err); // Pass any errors to the next middleware
+        }
+    }
+    next();
 });
 
+
+
+
+
+
+// Middleware to hash password before saving
+userSchema.pre('save', async function(next) {
+    if (!this.isModified('password')) return next();
+    this.password = await bcrypt.hash(this.password, 10);
+    next();
+});
 const User = mongoose.model("UserModel", userSchema);
 export default User;
