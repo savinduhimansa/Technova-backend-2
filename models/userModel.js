@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt"; // <-- Add this import
 
+
 const userSchema = new mongoose.Schema({
     userId: {
         type: Number,
@@ -22,7 +23,7 @@ const userSchema = new mongoose.Schema({
     role: {
         type: String,
         required: true,
-        enum: ["user", "admin","salesmanager"], // Only allow "user" or "admin"
+        enum: ["user", "admin"], // Only allow "user" or "admin"
         default: "user" 
     },
     password: {

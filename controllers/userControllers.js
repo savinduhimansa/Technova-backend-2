@@ -793,3 +793,4 @@ export async function logout(req, res) {
 //         return res.status(500).json({ message: "Unable to toggle admin status." });
 //     }
 // }
+
