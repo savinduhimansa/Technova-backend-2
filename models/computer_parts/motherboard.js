@@ -33,8 +33,30 @@ const motherboardSchema = new mongoose.Schema({
     type: Number,
     default: 2
   },
-  price: Number,
-  stock: Number
+  price: {
+    type: Number,
+    required: true
+  },
+  images: {
+    type: [String],
+    required: true,
+    default: ["https://d2ati23fc66y9j.cloudfront.net/category-pages/sub_category-174021874143.jpg"]
+  },
+  stock: {
+    type: Number,
+    required: true
+  },
+  m2Slots: { 
+    type: Number, 
+    default: 1 
+  },        // for NVMe M.2 SSD
+  sataPorts: { 
+    type: Number, 
+    default: 4 
+  },      // for SATA SSD/HDD
+  cpuTdpHintW: { 
+    type: Number, 
+    default: 65 }   // optional: used if CPU lacks tdp
 });
 
 const Motherboard = mongoose.model("motherboards", motherboardSchema);

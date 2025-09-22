@@ -6,11 +6,34 @@ const gpuSchema = new mongoose.Schema({
     unique: true, 
     required: true 
   },
-  brand: String,
-  model: String,
-  lengthMM: Number,       // for case clearance
-  price: Number,
-  stock: Number
+  brand: {
+    type: String,
+    required: true
+  },
+  model: {
+    type: String,
+    required: true
+  },
+  lengthMM: {
+    type: String
+  },       // for case clearance
+  price: {
+    type: Number,
+    required: true
+  },
+  images: {
+    type: [String],
+    required: true,
+    default: ["https://d2ati23fc66y9j.cloudfront.net/category-pages/sub_category-174021874143.jpg"]
+  },
+  stock: {
+    type: Number,
+    required: true
+  },
+  tdpWatts: { 
+    type: Number, 
+    default: 160 
+  }
 });
 
 const Gpu = mongoose.model("gpus", gpuSchema);
