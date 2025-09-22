@@ -2,6 +2,11 @@
 import mongoose from "mongoose";
 import Product from "../models/product.js";
 
+/** Helper: allow admin (User model) OR inventoryManager (Staff model) */
+function canManageProducts(req) {
+  return req.user && (req.user.role === "admin" || req.user.role === "inventoryManager");
+}
+
 /** Helper: normalize incoming body (map legacy 'cost' -> 'labeledPrice') */
 function normalizeBody(body = {}) {
   const normalized = { ...body };
@@ -17,20 +22,21 @@ function isObjectId(id) {
   return mongoose.isValidObjectId(id);
 }
 
-// ✅ Create a new product
+// ✅ Create a new product (admin or inventoryManager)
 export const createProduct = async (req, res) => {
+  if (!canManageProducts(req)) {
+    return res.status(403).json({ success: false, message: "Not authorized" });
+  }
   try {
     const data = normalizeBody(req.body);
     const product = new Product(data);
     await product.save();
-
     res.status(201).json({
       success: true,
       message: "Product created successfully",
       data: product,
     });
   } catch (error) {
-    // Friendly duplicate key handling
     if (error?.code === 11000) {
       const fields = Object.keys(error.keyPattern || {});
       return res
@@ -41,7 +47,7 @@ export const createProduct = async (req, res) => {
   }
 };
 
-// ✅ Get all products (filters: category, brand, search, productId, minPrice, maxPrice, inStock)
+// ✅ Get all products (public; filters optional)
 export const getProducts = async (req, res) => {
   try {
     const { category, brand, search, productId, minPrice, maxPrice, inStock } = req.query;
@@ -51,20 +57,17 @@ export const getProducts = async (req, res) => {
     if (brand) filter.brand = brand;
     if (productId) filter.productId = productId;
 
-    // Price range (optional)
     if (minPrice != null || maxPrice != null) {
       filter.price = {};
       if (minPrice != null) filter.price.$gte = Number(minPrice);
       if (maxPrice != null) filter.price.$lte = Number(maxPrice);
     }
 
-    // In stock only (optional): ?inStock=true
     if (typeof inStock === "string") {
       if (inStock.toLowerCase() === "true") filter.stock = { $gt: 0 };
       if (inStock.toLowerCase() === "false") filter.stock = { $lte: 0 };
     }
 
-    // Search by name or altNames (case-insensitive substring)
     if (search) {
       const rx = { $regex: search, $options: "i" };
       filter.$or = [{ name: rx }, { altNames: rx }];
@@ -77,11 +80,10 @@ export const getProducts = async (req, res) => {
   }
 };
 
-// ✅ Get single product by ID (accepts Mongo _id OR business productId)
+// ✅ Get single product by ID (public)
 export const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
-
     const product = isObjectId(id)
       ? await Product.findById(id)
       : await Product.findOne({ productId: id });
@@ -96,12 +98,14 @@ export const getProductById = async (req, res) => {
   }
 };
 
-// ✅ Update a product (by Mongo _id OR business productId)
+// ✅ Update a product (admin or inventoryManager)
 export const updateProduct = async (req, res) => {
+  if (!canManageProducts(req)) {
+    return res.status(403).json({ success: false, message: "Not authorized" });
+  }
   try {
     const { id } = req.params;
     const data = normalizeBody(req.body);
-
     const query = isObjectId(id) ? { _id: id } : { productId: id };
 
     const product = await Product.findOneAndUpdate(query, data, {
@@ -129,8 +133,11 @@ export const updateProduct = async (req, res) => {
   }
 };
 
-// ✅ Delete a product (by Mongo _id OR business productId)
+// ✅ Delete a product (admin or inventoryManager)
 export const deleteProduct = async (req, res) => {
+  if (!canManageProducts(req)) {
+    return res.status(403).json({ success: false, message: "Not authorized" });
+  }
   try {
     const { id } = req.params;
     const product = isObjectId(id)
@@ -147,8 +154,11 @@ export const deleteProduct = async (req, res) => {
   }
 };
 
-// ✅ Update stock (absolute set) — by Mongo _id OR business productId
+// ✅ Update stock (admin or inventoryManager) — absolute set
 export const updateStock = async (req, res) => {
+  if (!canManageProducts(req)) {
+    return res.status(403).json({ success: false, message: "Not authorized" });
+  }
   try {
     const { id } = req.params;
     const { quantity } = req.body;
@@ -175,4 +185,3 @@ export const updateStock = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
-

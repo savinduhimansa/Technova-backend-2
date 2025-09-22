@@ -7,49 +7,32 @@ import {
   updateProduct,
   deleteProduct,
   updateStock,
-} from "../controllers/productController.js"; // ✅ corrected path
+} from "../controllers/productController.js";
 
 const router = express.Router();
 
 /**
- * @route   POST /api/products
- * @desc    Create a new product
- * @body    { productId, name, brand, category, price, labeledPrice|cost, description, images?, stock, altNames? }
+ * NOTE: Your server mounts this router at "/api/product"
+ * in index.js: app.use("/api/product", productRouter)
+ * So final paths are like /api/product, /api/product/:id, etc.
  */
+
+// Create (admin or inventoryManager)
 router.post("/", createProduct);
 
-/**
- * @route   GET /api/products
- * @desc    List products with optional filters:
- *          ?category=&brand=&search=&productId=&minPrice=&maxPrice=&inStock=true|false
- */
+// List (public)
 router.get("/", getProducts);
 
-/**
- * @route   GET /api/products/:id
- * @desc    Get one product by Mongo _id OR business productId
- * @param   :id = 66f... (ObjectId) OR PROD-0001 (string)
- */
+// Get one (public)
 router.get("/:id", getProductById);
 
-/**
- * @route   PUT /api/products/:id
- * @desc    Update a product by Mongo _id OR business productId
- * @body    accepts legacy { cost } which will be mapped to { labeledPrice }
- */
+// Update (admin or inventoryManager)
 router.put("/:id", updateProduct);
 
-/**
- * @route   DELETE /api/products/:id
- * @desc    Delete a product by Mongo _id OR business productId
- */
+// Delete (admin or inventoryManager)
 router.delete("/:id", deleteProduct);
 
-/**
- * @route   PATCH /api/products/:id/stock
- * @desc    Set stock (absolute) by Mongo _id OR business productId
- * @body    { quantity: number >= 0 }
- */
+// Set stock (admin or inventoryManager)
 router.patch("/:id/stock", updateStock);
 
 export default router;
