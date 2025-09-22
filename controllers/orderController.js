@@ -1,13 +1,10 @@
 import Order from "../models/Order.js";
 import Product from "../models/product.js";
 
-// shared auth helper
-const canManage = (req) =>
-  req.user && (req.user.role === "admin" || req.user.role === "salesManager");
-
 // Create a new order
 export const createOrder = async (req, res, next) => {
-  if (!canManage(req)) return res.status(403).json({ message: "Not authorized" });
+  if (!req.user || !["admin", "salesmanager"].includes(req.user.role))
+    return res.status(403).json({ message: "Not authorized" });
 
   try {
     const { customerName, phoneNumber, address, products: productItems, discount = 0, paymentMethod, status } = req.body;
@@ -94,7 +91,8 @@ export const listConfirmedOrders = async (req, res, next) => {
 
 // Update an order
 export const updateOrder = async (req, res, next) => {
-  if (!canManage(req)) return res.status(403).json({ message: "Not authorized" });
+  if (!req.user || !["admin", "salesmanager"].includes(req.user.role))
+    return res.status(403).json({ message: "Not authorized" });
 
   try {
     const { id } = req.params;
@@ -151,7 +149,8 @@ export const updateOrder = async (req, res, next) => {
 
 // Delete an order
 export const deleteOrder = async (req, res, next) => {
-  if (!canManage(req)) return res.status(403).json({ message: "Not authorized" });
+  if (!req.user || !["admin", "salesmanager"].includes(req.user.role))
+    return res.status(403).json({ message: "Not authorized" });
 
   try {
     const { id } = req.params;

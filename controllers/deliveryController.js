@@ -1,12 +1,10 @@
 import Delivery from "../models/Delivery.js";
 import Order from "../models/Order.js";
 
-const canManage = (req) =>
-  req.user && (req.user.role === "admin" || req.user.role === "salesManager");
-
 export const assignDelivery = async (req, res, next) => {
-  if (!canManage(req)) return res.status(403).json({ message: "Not authorized" });
-
+  if (!req.user || !["admin", "salesmanager"].includes(req.user.role)) {
+    return res.status(403).json({ message: "Not authorized" });
+  }
   try {
     const { orderId, courierService, scheduledDate } = req.body;
     const order = await Order.findOne({ orderID: orderId });
@@ -21,7 +19,7 @@ export const assignDelivery = async (req, res, next) => {
       scheduledDate
     });
 
-    console.log(`[SMS] Delivery scheduled for ${order.customerName} (${order.phoneNumber}) on ${new Date(scheduledDate).toLocaleString()} via ${courierService}`);
+    console.log(`[MAIL] Delivery scheduled for ${order.customerName} on ${new Date(scheduledDate).toLocaleString()} via ${courierService}`);
     res.status(201).json(delivery);
   } catch (err) { next(err); }
 };
@@ -34,8 +32,9 @@ export const listDeliveries = async (req, res, next) => {
 };
 
 export const updateDeliveryStatus = async (req, res, next) => {
-  if (!canManage(req)) return res.status(403).json({ message: "Not authorized" });
-
+  if (!req.user || !["admin", "salesmanager"].includes(req.user.role)) {
+    return res.status(403).json({ message: "Not authorized" });
+  }
   try {
     const { status } = req.body;
     const delivery = await Delivery.findById(req.params.id);
@@ -44,6 +43,7 @@ export const updateDeliveryStatus = async (req, res, next) => {
     delivery.status = status;
     if (status === "Delivered") {
       delivery.deliveredAt = new Date();
+      // mark order as Completed
       await Order.findOneAndUpdate({ orderID: delivery.orderId }, { status: "Completed" });
     }
     await delivery.save();
@@ -52,8 +52,9 @@ export const updateDeliveryStatus = async (req, res, next) => {
 };
 
 export const deleteDelivery = async (req, res, next) => {
-  if (!canManage(req)) return res.status(403).json({ message: "Not authorized" });
-
+  if (!req.user || !["admin", "salesmanager"].includes(req.user.role)) {
+    return res.status(403).json({ message: "Not authorized" });
+  }
   try {
     const delivery = await Delivery.findByIdAndDelete(req.params.id);
     if (!delivery) return res.status(404).json({ message: "Delivery not found" });
