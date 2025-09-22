@@ -3,6 +3,13 @@ import mongoose from "mongoose";
 import Product from "../models/product.js";
 import PDFDocument from "pdfkit";
 
+/** Helper: allow admin (User model) OR inventoryManager (Staff model) */
+function canManageProducts(req) {
+  return req.user && (req.user.role === "admin" || req.user.role === "inventoryManager");
+}
+
+/** Helper: normalize incoming body (map legacy 'cost' -> 'labeledPrice') */
+
 /* ---------------- RBAC helper ---------------- */
 const INV_ROLES = ["admin", "inventory_manager"]; // central place to edit
 function requireRole(req, res, roles = INV_ROLES) {
@@ -19,6 +26,7 @@ function requireRole(req, res, roles = INV_ROLES) {
 }
 
 /* --------------- shared helpers --------------- */
+
 function normalizeBody(body = {}) {
   const normalized = { ...body };
   if (normalized.cost != null && normalized.labeledPrice == null) {
@@ -43,6 +51,12 @@ function buildFilterFromQuery(q = {}) {
     if (maxPrice != null) filter.price.$lte = Number(maxPrice);
   }
 
+// ✅ Create a new product (admin or inventoryManager)
+export const createProduct = async (req, res) => {
+  if (!canManageProducts(req)) {
+    return res.status(403).json({ success: false, message: "Not authorized" });
+  }
+
   if (typeof inStock === "string") {
     if (inStock.toLowerCase() === "true") filter.stock = { $gt: 0 };
     if (inStock.toLowerCase() === "false") filter.stock = { $lte: 0 };
@@ -60,6 +74,7 @@ function buildFilterFromQuery(q = {}) {
 // Create
 export const createProduct = async (req, res) => {
   if (!requireRole(req, res)) return;
+
   try {
     const data = normalizeBody(req.body);
     const product = new Product(data);
@@ -80,10 +95,37 @@ export const createProduct = async (req, res) => {
   }
 };
 
+
+// ✅ Get all products (public; filters optional)
 // List
+
 export const getProducts = async (req, res) => {
   if (!requireRole(req, res)) return;
   try {
+
+    const { category, brand, search, productId, minPrice, maxPrice, inStock } = req.query;
+    const filter = {};
+
+    if (category) filter.category = category;
+    if (brand) filter.brand = brand;
+    if (productId) filter.productId = productId;
+
+    if (minPrice != null || maxPrice != null) {
+      filter.price = {};
+      if (minPrice != null) filter.price.$gte = Number(minPrice);
+      if (maxPrice != null) filter.price.$lte = Number(maxPrice);
+    }
+
+    if (typeof inStock === "string") {
+      if (inStock.toLowerCase() === "true") filter.stock = { $gt: 0 };
+      if (inStock.toLowerCase() === "false") filter.stock = { $lte: 0 };
+    }
+
+    if (search) {
+      const rx = { $regex: search, $options: "i" };
+      filter.$or = [{ name: rx }, { altNames: rx }];
+    }
+
     const filter = buildFilterFromQuery(req.query);
     const products = await Product.find(filter);
     res.status(200).json({ success: true, data: products });
@@ -92,7 +134,8 @@ export const getProducts = async (req, res) => {
   }
 };
 
-// Get one
+
+// ✅ Get single product by ID (public)
 export const getProductById = async (req, res) => {
   if (!requireRole(req, res)) return;
   try {
@@ -110,9 +153,13 @@ export const getProductById = async (req, res) => {
   }
 };
 
-// Update
+
+// ✅ Update a product (admin or inventoryManager)
 export const updateProduct = async (req, res) => {
-  if (!requireRole(req, res)) return;
+  if (!canManageProducts(req)) {
+    return res.status(403).json({ success: false, message: "Not authorized" });
+  }
+
   try {
     const { id } = req.params;
     const data = normalizeBody(req.body);
@@ -142,9 +189,13 @@ export const updateProduct = async (req, res) => {
   }
 };
 
-// Delete
+
+// ✅ Delete a product (admin or inventoryManager)
 export const deleteProduct = async (req, res) => {
-  if (!requireRole(req, res)) return;
+  if (!canManageProducts(req)) {
+    return res.status(403).json({ success: false, message: "Not authorized" });
+  }
+
   try {
     const { id } = req.params;
     const product = isObjectId(id)
@@ -160,9 +211,13 @@ export const deleteProduct = async (req, res) => {
   }
 };
 
-// Set stock (absolute)
+
+// ✅ Update stock (admin or inventoryManager) — absolute set
 export const updateStock = async (req, res) => {
-  if (!requireRole(req, res)) return;
+  if (!canManageProducts(req)) {
+    return res.status(403).json({ success: false, message: "Not authorized" });
+  }
+
   try {
     const { id } = req.params;
     const { quantity } = req.body;
@@ -189,6 +244,7 @@ export const updateStock = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
 
 /* ----------------- PDF REPORT ----------------- */
 
@@ -369,3 +425,4 @@ export const getLowStock = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+

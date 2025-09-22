@@ -11,13 +11,36 @@ import {
   getLowStock,   
 } from "../controllers/productController.js"; // ✅ corrected path
 
+
 const productRouter = express.Router();
 
 /**
- * @route   POST /api/products
- * @desc    Create a new product
- * @body    { productId, name, brand, category, price, labeledPrice|cost, description, images?, stock, altNames? }
+ * NOTE: Your server mounts this router at "/api/product"
+ * in index.js: app.use("/api/product", productRouter)
+ * So final paths are like /api/product, /api/product/:id, etc.
  */
+
+
+// Create (admin or inventoryManager)
+router.post("/", createProduct);
+
+// List (public)
+router.get("/", getProducts);
+
+// Get one (public)
+router.get("/:id", getProductById);
+
+// Update (admin or inventoryManager)
+router.put("/:id", updateProduct);
+
+// Delete (admin or inventoryManager)
+router.delete("/:id", deleteProduct);
+
+// Set stock (admin or inventoryManager)
+router.patch("/:id/stock", updateStock);
+
+export default router;
+
 productRouter.post("/", createProduct);
 
 /**
@@ -59,3 +82,4 @@ productRouter.delete("/:id", deleteProduct);
 productRouter.patch("/:id/stock", updateStock);
 
 export default productRouter;
+
