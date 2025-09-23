@@ -15,6 +15,7 @@ import invoiceRoute from "./routes/invoices.js";
 import dashboardRoutes from "./routes/salesdashboard.js";
 import publicOrderRoutes from "./routes/orders.public.js";
 import chatbotRoutes from "./routes/chatbotRoutes.js";
+import supplierRoutes from "./routes/supplierRoutes.js";
 import dotenv from 'dotenv';
 import cors from 'cors';
 dotenv.config();
@@ -63,12 +64,13 @@ app.use(verifyJWT);
 
 
 
-app.use("/api/product", productRouter);
+app.use("/api/products", productRouter);
 app.use("/api/orders", orderRoutes);
 app.use("/api/deliveries", deliveryRoutes);
 app.use("/api/couriers", courierRoutes);
 app.use("/api/invoices",invoiceRoute);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/suppliers", supplierRoutes);
 
 
 
