@@ -13,12 +13,40 @@ const cpuSchema = new mongoose.Schema({
   },
   model: {
     type: String,
-    required: true
+    trim: true,
+    required: true,
+    unique: true
   },
   socket: {
     type: String,
     required: true   // AM4, AM5, LGA1700
+  },  
+   brand:{
+        type: String,
+        required: true,
+        trim: true,
+    },
+  altNames: {
+    type: [String],
+    default: []
   },
+  category: {
+      type: String,
+      required: true,
+      enum: {
+        values: [
+          'Laptops',
+          'Desktops',
+          'Monitors',
+          'Keyboards',
+          'Mice',
+          'Headsets',
+          'Graphics Cards',
+          'CPUs',
+          'Storage',
+        ]
+      }
+    },
   price: {
     type: Number,
     required: true
@@ -34,8 +62,13 @@ const cpuSchema = new mongoose.Schema({
   },
   tdpWatts: { 
     type: Number, 
-    default: 65 },      // optional, used for PSU sizing
-});
+    default: 65 
+  },      // optional, used for PSU sizing
+  ratingsQuantity: {
+      type: Number,
+      default: 0,
+    } 
+})
 
 const Cpu = mongoose.model("cpus",cpuSchema);
 
