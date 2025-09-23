@@ -16,6 +16,8 @@ import dashboardRoutes from "./routes/salesdashboard.js";
 import publicOrderRoutes from "./routes/orders.public.js";
 import chatbotRoutes from "./routes/chatbotRoutes.js";
 import supplierRoutes from "./routes/supplierRoutes.js";
+import partsRouter from './routes/partsRouter.js';
+import buildRequestRouter from "./routes/buildRequestRouter.js";
 import dotenv from 'dotenv';
 import cors from 'cors';
 dotenv.config();
@@ -39,10 +41,6 @@ mongoose.connect(process.env.MONGO_URL).then(
 )
 
 
-//Gayani
-
-dotenv.config()
-
 
 app.use(express.json());
 app.use(cookieParser());
@@ -50,14 +48,11 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use("/api/public/orders", publicOrderRoutes);
 app.use("/api/chatbot", chatbotRoutes);
-
 app.use("/api", userRouters);
 // app.use("/api/user", userRouters);
 // app.use("/api/staff", userRouters);
 // app.use("/api/admin", userRouters);
-
 app.use('/api/feedback', feedbackRouters); 
-
 app.use('/api/auth', authRoutes);
 
 app.use(verifyJWT);
@@ -71,6 +66,9 @@ app.use("/api/couriers", courierRoutes);
 app.use("/api/invoices",invoiceRoute);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/suppliers", supplierRoutes);
+
+app.use("/api/parts", partsRouter);
+app.use("/api/build-requests", buildRequestRouter); 
 
 
 
@@ -88,6 +86,7 @@ app.use((req, res, next) => {
     }
     next();
 });
+
 
 
 
