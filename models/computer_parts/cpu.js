@@ -1,17 +1,26 @@
 import mongoose from "mongoose";
 
-const productScheme = new mongoose.Schema({
+const cpuSchema = new mongoose.Schema({
   productId: {
     type: String,
-    required: true,
-    unique: true
+    unique: true,
+    required: true
   },
-  name: {
+  brand: {
+    type: String,
+    enum: ["AMD", "Intel"],  // Ryzen => AMD
+    required: true
+  },
+  model: {
     type: String,
     trim: true,
     required: true,
     unique: true
   },
+  socket: {
+    type: String,
+    required: true   // AM4, AM5, LGA1700
+  },  
    brand:{
         type: String,
         required: true,
@@ -42,14 +51,6 @@ const productScheme = new mongoose.Schema({
     type: Number,
     required: true
   },
-  labeledPrice: {
-    type: Number,
-    required: true
-  },
-  description: {
-    type: String,
-    required: true
-  },
   images: {
     type: [String],
     required: true,
@@ -59,12 +60,16 @@ const productScheme = new mongoose.Schema({
     type: Number,
     required: true
   },
+  tdpWatts: { 
+    type: Number, 
+    default: 65 
+  },      // optional, used for PSU sizing
   ratingsQuantity: {
       type: Number,
       default: 0,
     } 
 })
 
-const Product = mongoose.model("products",productScheme);
+const Cpu = mongoose.model("cpus",cpuSchema);
 
-export default Product;
+export default Cpu;
