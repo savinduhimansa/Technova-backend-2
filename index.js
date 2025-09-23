@@ -15,6 +15,7 @@ import invoiceRoute from "./routes/invoices.js";
 import dashboardRoutes from "./routes/salesdashboard.js";
 import publicOrderRoutes from "./routes/orders.public.js";
 import chatbotRoutes from "./routes/chatbotRoutes.js";
+import supplierRoutes from "./routes/supplierRoutes.js";
 import partsRouter from './routes/partsRouter.js';
 import buildRequestRouter from "./routes/buildRequestRouter.js";
 import dotenv from 'dotenv';
@@ -58,19 +59,20 @@ app.use(verifyJWT);
 
 
 
-app.use("/api/product", productRouter);
+app.use("/api/products", productRouter);
 app.use("/api/orders", orderRoutes);
 app.use("/api/deliveries", deliveryRoutes);
 app.use("/api/couriers", courierRoutes);
 app.use("/api/invoices",invoiceRoute);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/suppliers", supplierRoutes);
 
 app.use("/api/parts", partsRouter);
 app.use("/api/build-requests", buildRequestRouter); 
 
 
 
-/*
+
 app.use((req, res, next) => {
     const header = req.header("Authorization");
     if (header) {
@@ -84,7 +86,7 @@ app.use((req, res, next) => {
     }
     next();
 });
-*/
+
 
 
 
