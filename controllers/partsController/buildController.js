@@ -9,6 +9,7 @@ import HDD from "../../models/computer_parts/hdd.js";
 import PSU from "../../models/computer_parts/psu.js";
 import Fan from "../../models/computer_parts/fan.js";
 import Build from "../../models/build.js";
+import PDFDocument from "pdfkit";
 
 const pick = (doc, fields = []) =>
   Object.fromEntries(fields.map(f => [f, doc?.[f]]));
@@ -308,6 +309,103 @@ export async function adminDeleteBuild(req, res) {
     const b = await Build.findOneAndDelete({ buildId });
     if (!b) return res.status(404).json({ ok: false, message: "Not found" });
     res.json({ ok: true, deleted: buildId });
+  } catch (e) {
+    res.status(500).json({ ok: false, message: e.message });
+  }
+}
+
+
+// --- Download build as PDF (JWT) ---
+export async function getBuildPdf(req, res) {
+  try {
+    const { buildId } = req.params;
+    const userId = req.user?.id || null;
+
+    // Only allow the owner to download (or relax if you want admins too)
+    const build = await Build.findOne({ buildId, userId });
+    if (!build) return res.status(404).json({ ok: false, message: "Build not found" });
+
+    const doc = new PDFDocument({ size: "A4", margin: 50 });
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename=${buildId}.pdf`);
+    doc.pipe(res);
+
+    // Header
+    doc.rect(0, 0, doc.page.width, 80).fill("#111827");
+    doc.fillColor("#FFFFFF").fontSize(20).text("TechNova — PC Build", 50, 28);
+    doc.fillColor("#9CA3AF").fontSize(10).text(`Build ID: ${build.buildId}`, 50, 58);
+
+    // Meta
+    doc.moveDown().fillColor("#111827").fontSize(12);
+    const meta = [
+      ["Status", build.status],
+      ["Created", new Date(build.createdAt).toLocaleString()],
+      ["Updated", new Date(build.updatedAt).toLocaleString()],
+      ["Name", build.name || "(untitled build)"],
+    ];
+    meta.forEach(([k,v]) => doc.text(`${k}: ${v}`));
+    doc.moveDown();
+
+    // Items
+    const rows = [];
+    const add = (label, part) => { if (part) rows.push([label, part.model || "", part.price ?? 0]); };
+    const it = build.items || {};
+    add("CPU", it.cpu);
+    add("Motherboard", it.motherboard);
+    add("RAM", it.ram);
+    add("GPU", it.gpu);
+    add("Case", it.case);
+    add("SSD", it.ssd);
+    add("HDD", it.hdd);
+    add("PSU", it.psu);
+    (it.fans || []).forEach((f, i) => add(`Fan #${i+1}`, f));
+
+    const fmt = n => `$${Number(n||0).toFixed(2)}`;
+
+    doc.fontSize(13).text("Selected Parts", { underline: true });
+    doc.moveDown(0.5);
+    rows.forEach(([cat, desc, price]) => {
+      doc.fontSize(11).text(`${cat}: ${desc}`);
+      doc.text(`Price: ${fmt(price)}`);
+      doc.moveDown(0.25);
+    });
+
+    doc.moveDown(0.5);
+    doc.fontSize(12).text(`Subtotal: ${fmt(build.prices?.subtotal)}`);
+    doc.text(`Tax: ${fmt(build.prices?.tax)}`);
+    doc.font("Helvetica-Bold").text(`Total: ${fmt(build.prices?.total)}`);
+    doc.font("Helvetica");
+
+    // Compatibility
+    doc.moveDown();
+    const compat = build.compatibility || { ok: true, errors: [] };
+    doc.text(`Compatibility: ${compat.ok ? "OK" : "Issues found"}`);
+    if (!compat.ok && compat.errors?.length) {
+      compat.errors.forEach(e => doc.text(` • ${e}`));
+    }
+
+    doc.end();
+  } catch (e) {
+    if (!res.headersSent) res.status(500).json({ ok: false, message: e.message });
+  }
+}
+
+// --- Mark approved build as purchased (JWT) ---
+export async function purchaseBuild(req, res) {
+  try {
+    const { buildId } = req.params;
+    const userId = req.user?.id || "";
+
+    const b = await Build.findOne({ buildId, userId });
+    if (!b) return res.status(404).json({ ok: false, message: "Build not found" });
+
+    if (b.status !== "approved") {
+      return res.status(400).json({ ok: false, message: "Build must be approved before purchase" });
+    }
+
+    b.status = "purchased";
+    await b.save();
+    res.json({ ok: true, build: b });
   } catch (e) {
     res.status(500).json({ ok: false, message: e.message });
   }

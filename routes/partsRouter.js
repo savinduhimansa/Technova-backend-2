@@ -13,7 +13,8 @@ import { getMotherboardCompatible, createMotherboard, updateMotherboard, deleteM
 import {
   quoteBuild, createBuild, getBuild,
   listMyBuilds, submitBuild,
-  adminListBuilds, adminUpdateBuild, adminDeleteBuild
+  adminListBuilds, adminUpdateBuild, adminDeleteBuild,
+  getBuildPdf, purchaseBuild
 } from "../controllers/partsController/buildController.js";
 
 import { getSsd, createSsd, updateSsd, deleteSsd } from "../controllers/partsController/ssdController.js";
@@ -34,6 +35,7 @@ partsRouter.get("/hdds", getHdd);
 partsRouter.get("/psus", getPsu);
 partsRouter.get("/fans", getFan);
 partsRouter.post("/builds/verify", verifyBuild);
+partsRouter.post("/builds/quote", quoteBuild);
 partsRouter.get("/builds/:buildId", getBuild);
 
 /* ------------------------------ AUTH NEEDED ------------------------------- */
@@ -48,6 +50,12 @@ partsRouter.get("/my/builds", listMyBuilds);
 
 // Submit a draft for admin approval
 partsRouter.post("/builds/:buildId/submit", submitBuild);
+
+// NEW: download build as PDF
+partsRouter.get("/builds/:buildId/pdf", getBuildPdf);
+
+// NEW: mark approved build as purchased
+partsRouter.patch("/builds/:buildId/purchase", purchaseBuild);
 
 /* ------------------------------ ADMIN CRUD ------------------------------- */
 partsRouter.get("/admin/builds", isAdmin, adminListBuilds);
