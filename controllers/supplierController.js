@@ -2,24 +2,32 @@
 import mongoose from "mongoose";
 import Supplier from "../models/suppliers.js";
 
-/* ---------- Role gate (controller-level) ---------- */
+/* ---------- Role gate (accept User or Staff) ---------- */
+const ALLOWED_INV_ROLES = new Set([
+  "admin",
+  "inventorymanager",
+  "inventory-manager",
+  "inventory_manager",
+]);
+
+function extractRoles(req) {
+  const out = [];
+  const push = (r) => r && out.push(String(r).toLowerCase());
+  push(req?.user?.role);
+  push(req?.staff?.role);
+  push(req?.employee?.role);
+  return out;
+}
+
 function deny(res, code, message) {
   return res.status(code).json({ success: false, message });
 }
+
 function requireInventoryAccess(req, res) {
-  // must have a verified user attached by verifyJWT
-  const user = req.user;
-  if (!user || !user.role) {
-    deny(res, 401, "Unauthorized: missing or invalid token.");
-    return false;
-  }
-  const role = String(user.role).toLowerCase();
-  // allow admin and inventory-manager (support a few common spellings)
-  const allowed = new Set(["admin", "inventory-manager", "inventory_manager"]);
-  if (!allowed.has(role)) {
-    deny(res, 403, "Forbidden: admin or inventory manager only.");
-    return false;
-  }
+  const roles = extractRoles(req);
+  if (roles.length === 0) return deny(res, 401, "Unauthorized: missing or invalid token.");
+  const ok = roles.some((r) => ALLOWED_INV_ROLES.has(r));
+  if (!ok) return deny(res, 403, "Forbidden: admin or inventory manager only.");
   return true;
 }
 
@@ -57,7 +65,7 @@ export const getSuppliers = async (req, res) => {
   try {
     const {
       supplierId,
-      search,            // matches supplierName | email | contactNo | address
+      search,
       minBalance,
       maxBalance,
       minPayments,
@@ -68,7 +76,6 @@ export const getSuppliers = async (req, res) => {
 
     if (supplierId) filter.supplierId = supplierId;
 
-    // search across common text fields
     if (search) {
       const rx = { $regex: search, $options: "i" };
       filter.$or = [
@@ -79,7 +86,6 @@ export const getSuppliers = async (req, res) => {
       ];
     }
 
-    // numeric ranges
     if (minBalance != null || maxBalance != null) {
       filter.balance = {};
       if (minBalance != null) filter.balance.$gte = Number(minBalance);
@@ -170,7 +176,7 @@ export const deleteSupplier = async (req, res) => {
   }
 };
 
-/* ---------- Optional focused endpoints (handy for finance flows) ---------- */
+/* ---------- Optional focused endpoints ---------- */
 
 // ✅ Set absolute balance
 export const setSupplierBalance = async (req, res) => {
@@ -219,8 +225,7 @@ export const addSupplierPayment = async (req, res) => {
     }
 
     supplier.payments = Number(supplier.payments || 0) + Number(amount);
-
-    // If you also want to reduce balance by payment, uncomment next line:
+    // Optionally: also adjust balance:
     // supplier.balance = Number(supplier.balance || 0) - Number(amount);
 
     await supplier.save();

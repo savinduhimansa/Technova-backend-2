@@ -3,12 +3,7 @@ import mongoose from "mongoose";
 
 const supplierSchema = new mongoose.Schema(
   {
-    supplierId: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-    },
+    supplierId: { type: String, required: true, unique: true, trim: true, },
     supplierName: {
       type: String,
       required: true,

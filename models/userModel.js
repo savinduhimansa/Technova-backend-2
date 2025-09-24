@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt"; // <-- Add this import
 
-
 const userSchema = new mongoose.Schema({
     userId: {
         type: Number,
@@ -29,6 +28,7 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true,
+        select: false
     },
     phone: {
         type: String,
@@ -71,11 +71,6 @@ userSchema.pre('save', async function (next) {
     }
     next();
 });
-
-
-
-
-
 
 // Middleware to hash password before saving
 userSchema.pre('save', async function(next) {

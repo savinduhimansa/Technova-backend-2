@@ -1,6 +1,9 @@
 import Delivery from "../models/Delivery.js";
 import Courier from "../models/Courier.js";
 
+const canManage = (req) =>
+  req.user && (req.user.role === "admin" || req.user.role === "salesManager");
+
 export const getAllCouriers = async (req, res) => {
   try {
     const couriers = await Courier.find().sort({ name: 1 });
@@ -11,9 +14,8 @@ export const getAllCouriers = async (req, res) => {
 };
 
 export const generateCourierReport = async (req, res) => {
-  if (!req.user || !["admin", "salesmanager"].includes(req.user.role)) {
-    return res.status(403).json({ message: "Not authorized" });
-  }
+  if (!canManage(req)) return res.status(403).json({ message: "Not authorized" });
+
   try {
     const { month } = req.query;
     let matchStage = {};
@@ -96,9 +98,8 @@ export const generateCourierReport = async (req, res) => {
 };
 
 export const deleteCourierById = async (req, res) => {
-  if (!req.user || !["admin", "salesmanager"].includes(req.user.role)) {
-    return res.status(403).json({ message: "Not authorized" });
-  }
+  if (!canManage(req)) return res.status(403).json({ message: "Not authorized" });
+
   try {
     const courier = await Courier.findByIdAndDelete(req.params.id);
     if (!courier) return res.status(404).json({ message: "Courier not found" });

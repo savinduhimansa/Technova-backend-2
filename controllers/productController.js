@@ -4,14 +4,22 @@ import Product from "../models/product.js";
 import PDFDocument from "pdfkit";
 
 /* ---------------- RBAC helper ---------------- */
-const INV_ROLES = ["admin", "inventory_manager"]; // central place to edit
+// Normalize role strings so these are treated the same:
+// "inventoryManager", "inventory-manager", "inventory_manager" -> "inventorymanager"
+function normalizeRole(r) {
+  return String(r || "").toLowerCase().replace(/[\s_-]/g, "");
+}
+// Keep the allowed roles in normalized form
+const INV_ROLES = ["admin", "inventorymanager"]; // central place to edit
 function requireRole(req, res, roles = INV_ROLES) {
   // req.user is set by your global verifyJWT middleware
   if (!req.user) {
     res.status(401).json({ success: false, message: "Unauthenticated" });
     return false;
   }
-  if (!roles.includes(req.user.role)) {
+  const userRole = normalizeRole(req.user.role);
+  const allowed = new Set((roles || []).map(normalizeRole));
+  if (!allowed.has(userRole)) {
     res.status(403).json({ success: false, message: "Forbidden" });
     return false;
   }
@@ -57,7 +65,7 @@ function buildFilterFromQuery(q = {}) {
 
 /* -------------------- CRUD -------------------- */
 
-// Create
+/** PROTECTED: Create */
 export const createProduct = async (req, res) => {
   if (!requireRole(req, res)) return;
   try {
@@ -80,9 +88,8 @@ export const createProduct = async (req, res) => {
   }
 };
 
-// List
+/** PUBLIC: List products for homepage & search (NO auth required) */
 export const getProducts = async (req, res) => {
-  if (!requireRole(req, res)) return;
   try {
     const filter = buildFilterFromQuery(req.query);
     const products = await Product.find(filter);
@@ -92,9 +99,8 @@ export const getProducts = async (req, res) => {
   }
 };
 
-// Get one
+/** PUBLIC: Get one product by _id OR productId (NO auth required) */
 export const getProductById = async (req, res) => {
-  if (!requireRole(req, res)) return;
   try {
     const { id } = req.params;
     const product = isObjectId(id)
@@ -110,7 +116,7 @@ export const getProductById = async (req, res) => {
   }
 };
 
-// Update
+/** PROTECTED: Update */
 export const updateProduct = async (req, res) => {
   if (!requireRole(req, res)) return;
   try {
@@ -142,7 +148,7 @@ export const updateProduct = async (req, res) => {
   }
 };
 
-// Delete
+/** PROTECTED: Delete */
 export const deleteProduct = async (req, res) => {
   if (!requireRole(req, res)) return;
   try {
@@ -160,7 +166,7 @@ export const deleteProduct = async (req, res) => {
   }
 };
 
-// Set stock (absolute)
+/** PROTECTED: Set stock (absolute) */
 export const updateStock = async (req, res) => {
   if (!requireRole(req, res)) return;
   try {
@@ -191,7 +197,7 @@ export const updateStock = async (req, res) => {
 };
 
 /* ----------------- PDF REPORT ----------------- */
-
+/** PROTECTED: inventory report remains restricted */
 export const getProductsReportPdf = async (req, res) => {
   if (!requireRole(req, res)) return;
   try {
@@ -277,7 +283,6 @@ export const getProductsReportPdf = async (req, res) => {
     };
 
     for (const p of products) {
-      // compute required row height with wrapping for "name" column
       const cells = {
         productId: p.productId ?? "",
         name: p.name ?? "",
@@ -287,7 +292,7 @@ export const getProductsReportPdf = async (req, res) => {
         stock: String(p.stock ?? ""),
       };
 
-      let requiredHeight = lineH; // min
+      let requiredHeight = lineH;
       const wrapped = {};
 
       cols.forEach((c) => {
@@ -295,7 +300,7 @@ export const getProductsReportPdf = async (req, res) => {
         if (c.wrap) {
           const lines = lineClamp(text, c.width - 8, 2);
           wrapped[c.key] = lines;
-          requiredHeight = Math.max(requiredHeight, 4 + lines.length * 12); // ~12px per line
+          requiredHeight = Math.max(requiredHeight, 4 + lines.length * 12);
         }
       });
 
@@ -304,13 +309,10 @@ export const getProductsReportPdf = async (req, res) => {
         y = doc.y;
       }
 
-      // draw cells
+      // draw row
       let cx = x;
       cols.forEach((c) => {
-        doc
-          .fontSize(10)
-          .fillColor("#111");
-
+        doc.fontSize(10).fillColor("#111");
         if (c.wrap && wrapped[c.key]) {
           const lines = wrapped[c.key];
           lines.forEach((ln, i) => {
@@ -350,6 +352,7 @@ export const getProductsReportPdf = async (req, res) => {
 };
 
 /* --------------- Low stock alerts --------------- */
+/** PROTECTED: keep internal */
 export const getLowStock = async (req, res) => {
   if (!requireRole(req, res)) return;
   try {
