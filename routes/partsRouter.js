@@ -14,6 +14,7 @@ import {
   quoteBuild, createBuild, getBuild,
   listMyBuilds, submitBuild,
   adminListBuilds, adminUpdateBuild, adminDeleteBuild,
+  // NEW:
   getBuildPdf, purchaseBuild
 } from "../controllers/partsController/buildController.js";
 
@@ -35,7 +36,10 @@ partsRouter.get("/hdds", getHdd);
 partsRouter.get("/psus", getPsu);
 partsRouter.get("/fans", getFan);
 partsRouter.post("/builds/verify", verifyBuild);
+
+// NEW: live quote without saving
 partsRouter.post("/builds/quote", quoteBuild);
+
 partsRouter.get("/builds/:buildId", getBuild);
 
 /* ------------------------------ AUTH NEEDED ------------------------------- */

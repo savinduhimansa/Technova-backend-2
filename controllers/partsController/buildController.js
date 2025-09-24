@@ -1,4 +1,5 @@
 // controllers/partsController/buildController.js
+import PDFDocument from "pdfkit"; // NEW
 import Cpu from "../../models/computer_parts/cpu.js";
 import Motherboard from "../../models/computer_parts/motherboard.js";
 import Ram from "../../models/computer_parts/ram.js";
@@ -9,51 +10,19 @@ import HDD from "../../models/computer_parts/hdd.js";
 import PSU from "../../models/computer_parts/psu.js";
 import Fan from "../../models/computer_parts/fan.js";
 import Build from "../../models/build.js";
-import PDFDocument from "pdfkit";
 
 const pick = (doc, fields = []) =>
   Object.fromEntries(fields.map(f => [f, doc?.[f]]));
 
-const snapCPU = (cpu) => ({
-  productId: cpu.productId,
-  ...pick(cpu, ["brand","model","socket","price","images"])
-});
-const snapMB = (mb) => ({
-  productId: mb.productId,
-  ...pick(mb, ["brand","model","socket","formFactor","memoryType","memorySlots","price","images"])
-});
-const snapRAM = (ram) => ({
-  productId: ram.productId,
-  ...pick(ram, ["brand","model","memoryType","kitCapacity","modules","speedMHz","price","images"])
-});
-const snapGPU = (gpu) => ({
-  productId: gpu.productId,
-  ...pick(gpu, ["brand","model","lengthMM","price","images"])
-});
-const snapCase = (pcCase) => ({
-  productId: pcCase.productId,
-  ...pick(pcCase, ["brand","model","supportedFormFactors","gpuMaxLengthMM","price","images"])
-});
-
-const snapSSD = (d) => d ? ({
-  productId: d.productId,
-  ...pick(d, ["brand","model","interface","formFactor","capacityGB","price","images"])
-}) : null;
-
-const snapHDD = (d) => d ? ({
-  productId: d.productId,
-  ...pick(d, ["brand","model","formFactor","capacityGB","rpm","price","images"])
-}) : null;
-
-const snapPSU = (d) => d ? ({
-  productId: d.productId,
-  ...pick(d, ["brand","model","wattage","efficiency","formFactor","price","images"])
-}) : null;
-
-const snapFan = (d) => d ? ({
-  productId: d.productId,
-  ...pick(d, ["brand","model","sizeMM","connector","rgb","price","images"])
-}) : null;
+const snapCPU = (cpu) => ({ productId: cpu.productId, ...pick(cpu, ["brand","model","socket","price","images"]) });
+const snapMB = (mb) => ({ productId: mb.productId, ...pick(mb, ["brand","model","socket","formFactor","memoryType","memorySlots","price","images"]) });
+const snapRAM = (ram) => ({ productId: ram.productId, ...pick(ram, ["brand","model","memoryType","kitCapacity","modules","speedMHz","price","images"]) });
+const snapGPU = (gpu) => ({ productId: gpu.productId, ...pick(gpu, ["brand","model","lengthMM","price","images"]) });
+const snapCase = (pcCase) => ({ productId: pcCase.productId, ...pick(pcCase, ["brand","model","supportedFormFactors","gpuMaxLengthMM","price","images"]) });
+const snapSSD = (d) => d ? ({ productId: d.productId, ...pick(d, ["brand","model","interface","formFactor","capacityGB","price","images"]) }) : null;
+const snapHDD = (d) => d ? ({ productId: d.productId, ...pick(d, ["brand","model","formFactor","capacityGB","rpm","price","images"]) }) : null;
+const snapPSU = (d) => d ? ({ productId: d.productId, ...pick(d, ["brand","model","wattage","efficiency","formFactor","price","images"]) }) : null;
+const snapFan = (d) => d ? ({ productId: d.productId, ...pick(d, ["brand","model","sizeMM","connector","rgb","price","images"]) }) : null;
 
 const verify = (cpu, mb, ram, gpu, pcCase) => {
   const errors = [];
@@ -80,14 +49,8 @@ const verify = (cpu, mb, ram, gpu, pcCase) => {
 
 const computeTotals = (cpu, mb, ram, gpu, pcCase, ssd, hdd, psu, fans = [], taxRate = 0) => {
   const prices = [
-    cpu?.price || 0,
-    mb?.price || 0,
-    ram?.price || 0,
-    gpu?.price || 0,
-    pcCase?.price || 0,
-    ssd?.price || 0,
-    hdd?.price || 0,
-    psu?.price || 0,
+    cpu?.price || 0, mb?.price || 0, ram?.price || 0, gpu?.price || 0,
+    pcCase?.price || 0, ssd?.price || 0, hdd?.price || 0, psu?.price || 0,
     ...(Array.isArray(fans) ? fans.map(f => f?.price || 0) : [])
   ];
   const subtotal = prices.reduce((a,b) => a + b, 0);
@@ -159,7 +122,7 @@ export async function quoteBuild(req, res) {
   }
 }
 
-// ============== CREATE DRAFT BUILD (save + decrement stock) ==============
+// ============== CREATE DRAFT BUILD ==============
 export async function createBuild(req, res) {
   try {
     const { cpuId, motherboardId, ramId, gpuId, caseId, ssdId, hddId, psuId, fanIds = [] } = req.body;
@@ -314,14 +277,12 @@ export async function adminDeleteBuild(req, res) {
   }
 }
 
-
-// --- Download build as PDF (JWT) ---
+/* ============== NEW: Download build as PDF (JWT) ============== */
 export async function getBuildPdf(req, res) {
   try {
     const { buildId } = req.params;
     const userId = req.user?.id || null;
 
-    // Only allow the owner to download (or relax if you want admins too)
     const build = await Build.findOne({ buildId, userId });
     if (!build) return res.status(404).json({ ok: false, message: "Build not found" });
 
@@ -350,14 +311,9 @@ export async function getBuildPdf(req, res) {
     const rows = [];
     const add = (label, part) => { if (part) rows.push([label, part.model || "", part.price ?? 0]); };
     const it = build.items || {};
-    add("CPU", it.cpu);
-    add("Motherboard", it.motherboard);
-    add("RAM", it.ram);
-    add("GPU", it.gpu);
-    add("Case", it.case);
-    add("SSD", it.ssd);
-    add("HDD", it.hdd);
-    add("PSU", it.psu);
+    add("CPU", it.cpu); add("Motherboard", it.motherboard); add("RAM", it.ram);
+    add("GPU", it.gpu); add("Case", it.case); add("SSD", it.ssd);
+    add("HDD", it.hdd); add("PSU", it.psu);
     (it.fans || []).forEach((f, i) => add(`Fan #${i+1}`, f));
 
     const fmt = n => `$${Number(n||0).toFixed(2)}`;
@@ -390,7 +346,7 @@ export async function getBuildPdf(req, res) {
   }
 }
 
-// --- Mark approved build as purchased (JWT) ---
+/* ============== NEW: Mark approved build as purchased (JWT) ============== */
 export async function purchaseBuild(req, res) {
   try {
     const { buildId } = req.params;
