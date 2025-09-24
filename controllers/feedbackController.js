@@ -39,3 +39,59 @@ export const getAllFeedback = async (_req, res) => {
     });
   }
 };
+
+
+// --- ADD: update (edit) a feedback by id
+export const updateFeedback = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email, name, serviceRating, comments } = req.body;
+
+    const updated = await Feedback.findByIdAndUpdate(
+      id,
+      { email, name, serviceRating, comments },
+      { new: true, runValidators: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Feedback not found" });
+    }
+
+    res.status(200).json({
+      message: "Feedback updated successfully",
+      feedback: updated,
+    });
+  } catch (error) {
+    console.error("Error updating feedback:", error);
+    res.status(400).json({
+      message: "Error updating feedback",
+      error: error.message,
+    });
+  }
+};
+
+// --- ADD: delete a feedback by id
+export const deleteFeedback = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deleted = await Feedback.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Feedback not found" });
+    }
+
+    res.status(200).json({
+      message: "Feedback deleted successfully",
+      feedback: deleted,
+    });
+  } catch (error) {
+    console.error("Error deleting feedback:", error);
+    res.status(400).json({
+      message: "Error deleting feedback",
+      error: error.message,
+    });
+  }
+};
+
+
