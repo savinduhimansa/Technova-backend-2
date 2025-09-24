@@ -34,8 +34,7 @@ const OrderSchema = new mongoose.Schema({
     default: "Paid"
   },
 
-  date: { type: Date, default: Date.now },
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "UserModel", index: true }
+  date: { type: Date, default: Date.now }
 }, { timestamps: true });
 
 // Calculate total price before save

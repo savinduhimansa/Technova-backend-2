@@ -73,7 +73,7 @@ app.use("/api/build-requests", buildRequestRouter);
 
 
 
-/*app.use((req, res, next) => {
+app.use((req, res, next) => {
     const header = req.header("Authorization");
     if (header) {
         const token = header.replace("Bearer ", "");
@@ -85,7 +85,7 @@ app.use("/api/build-requests", buildRequestRouter);
         }
     }
     next();
-});*/
+});
 
 
 
