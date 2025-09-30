@@ -100,8 +100,10 @@ export async function verifyOTP(req, res) {
 // Log in a user and issue a JWT
 export async function loginUser(req, res) {
     const { email, password } = req.body;
+   
+
     try {
-        const user = await User.findOne({ email });
+         const user = await User.findOne({ email }).select("+password");
 
 
         
@@ -147,7 +149,7 @@ export async function loginUser(req, res) {
                 lastName: user.lastName,
                 role: user.role,
                 phone: user.phone,
-                isDisabled: user.isDisabled,
+                isDisabled: user.isDisable,
                 isEmailVerified: user.isEmailVerified,
                 lastLogin: user.lastLogin
             }
@@ -359,21 +361,184 @@ export async function resetPassword(req, res) {
     }
 }
 
+
+
+
+// ===== Self-service profile =====
+const safeUser = (u) => ({
+  _id: u._id,
+  userId: u.userId,
+  email: u.email,
+  firstName: u.firstName,
+  lastName: u.lastName,
+  role: u.role,
+  phone: u.phone ?? null,
+  isDisable: !!u.isDisable,
+  isEmailVerified: !!u.isEmailVerified,
+  lastLogin: u.lastLogin ?? null,
+  createdAt: u.createdAt,
+  updatedAt: u.updatedAt,
+});
+
+// GET /api/user/me
+export async function getMe(req, res) {
+  
+    try {
+    const id =req.user.id
+    console.log(id);
+    if (!id) return res.status(401).json({ message: "Unauthorized" });
+        
+    const user = await User.findOne({ _id:id });
+    console.log(user);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.isDisable) return res.status(403).json({ message: "Account is deactivated" });
+
+    return res.json({ user: safeUser(user) });
+  } catch (e) {
+    return res.status(500).json({ message: e.message });
+  }
+}
+
+// PUT /api/user/me
+export async function updateMe(req, res) {
+  try {
+    const id = req.user.id
+    if (!id) return res.status(401).json({ message: "Unauthorized" });
+
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.isDisable) return res.status(403).json({ message: "Account is deactivated" });
+
+    const { firstName, lastName, phone } = req.body ?? {};
+    if (firstName != null) user.firstName = String(firstName).trim();
+    if (lastName  != null) user.lastName  = String(lastName).trim();
+    if (phone     != null) user.phone     = String(phone).trim();
+
+    await user.save();
+    return res.json({ user: safeUser(user), message: "Profile updated" });
+  } catch (e) {
+    return res.status(500).json({ message: e.message });
+  }
+}
+
+// POST /api/auth/change-password
+export async function changePassword(req, res) {
+  try {
+    const id = req.user.id
+    if (!id) return res.status(401).json({ message: "Unauthorized" });
+
+    const { currentPassword, newPassword } = req.body ?? {};
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "currentPassword and newPassword are required" });
+    }
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters" });
+    }
+
+    const user = await User.findById(id).select("+password");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.isDisable) return res.status(403).json({ message: "Account is deactivated" });
+
+    const ok = await bcrypt.compare(String(currentPassword), String(user.password));
+    if (!ok) return res.status(400).json({ message: "Current password is incorrect" });
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(String(newPassword), salt);
+    await user.save();
+
+    return res.json({ message: "Password changed successfully" });
+  } catch (e) {
+    return res.status(500).json({ message: e.message });
+  }
+}
+
+// ===== Self-service profile =====
+const safeStaff = (s) => ({
+        staffId: s.staffId,
+        name: s.name,
+        role: s.role,
+        email: s.email,
+        age: s.age,
+        address: s.address,
+        isDisable: s.isDisable,
+        lastLogin: s.lastLogin,
+        createdAt: s.createdAt,
+        updatedAt: s.updatedAt,
+});
+
+// GET /api/staff/me
+export async function getMyStaff(req, res) {
+  try {
+    const id = req.user.id;
+    if (!id) return res.status(401).json({ message: "Unauthorized" });
+
+    const staff = await Staff.findById(id);
+    // console.log(staff);
+    if (!staff) return res.status(404).json({ message: "Staff not found" });
+    if (staff.isDisable) return res.status(403).json({ message: "Account is deactivated" });
+
+    return res.json({
+      staff: {
+        staffId: staff.staffId,
+        name: staff.name,
+        role: staff.role,
+        email: staff.email,
+        age: staff.age,
+        address: staff.address,
+        isDisable: staff.isDisable,
+        lastLogin: staff.lastLogin,
+        createdAt: staff.createdAt,
+        updatedAt: staff.updatedAt,
+      }
+    });
+  } catch (e) {
+    return res.status(500).json({ message: e.message });
+  }
+}
+
+
+export async function updateMyStaff(req, res) {
+   
+    try {
+    const id = req.body["id"]
+    if (!id) return res.status(401).json({ message: "Unauthorized" });
+    
+    const staff = await Staff.findOne({ staffId:id });
+    
+    if (!staff) return res.status(404).json({ message: "Staff not found" });
+    if (staff.isDisable) return res.status(403).json({ message: "Account is deactivated" });
+
+    const { name, age, address } = req.body ?? {};
+    if (name != null) staff.name = String(name).trim();
+    if (age  != null) staff.age  = String(age).trim();
+    if (address     != null) staff.address = String(address).trim();
+
+    await staff.save();
+    return res.json({ staff: safeStaff(staff), message: "Profile updated" });
+  } catch (e) {
+    return res.status(500).json({ message: e.message });
+  }
+}
+
+
+
+
+
 //STAFF MEMBERS
 // Save a new staff member with a hashed password
 export async function saveStaff(req, res) {
-    if (req.body.role === "admin") {
-        if (req.staff == null) {
-            return res.status(403).json({
-                message: "Please login as admin before creating an admin account",
-            });
-        }
-        if (req.staff.role !== "admin") {
-            return res.status(403).json({
-                message: "You are not authorized to create an admin account",
-            });
-        }
-    }
+    // if (req.body.role === "admin") {
+    //     if (req.user == null) {
+    //         return res.status(403).json({
+    //             message: "Please login as admin before creating an admin account",
+    //         });
+    //     }
+    //     if (req.user.role !== "admin") {
+    //         return res.status(403).json({
+    //             message: "You are not authorized to create an admin account",
+    //         });
+    //     }
+    // }
 
     try {
         const { staffId, name, role, email, age, password, address } = req.body;
@@ -385,7 +550,7 @@ export async function saveStaff(req, res) {
             role,
             email,
             age,
-            password: hashPassword,
+            password,
             address,
             isDisable: false
         });
@@ -406,64 +571,62 @@ export async function saveStaff(req, res) {
 
 // Log in a staff member and issue a JWT
 export async function loginStaff(req, res) {
-    const { email, password } = req.body;
-    
-    try {
-        const staff = await Staff.findOne({ email });
-        
-        console.log(staff["password"]);
-        if (!staff) {
-            
-            return res.status(404).json({ message: "Invalid credentials" });
-        
-        }
+  const { email, password } = req.body;
 
-        if (staff.password == null) {
-            return res.status(403).json({ message: "Account not configured for login" });
-        }
-        
-        // VULNERABILITY FIX: Standardize password comparison to be async
-        const isPasswordCorrect = await bcrypt.compare(password, staff["password"]);
+  try {
+    // If your Staff schema has `select: false` on password, include +password.
+    const staff = await Staff.findOne({ email }).select("+password");
 
-        if (!isPasswordCorrect) {
-            
-            return res.status(403).json({ message: "Invalid credentials" });
-        }
-
-        // VULNERABILITY FIX: Check if the staff member is disabled
-        if (staff.isDisable) {
-            return res.status(403).json({ message: "Your account has been deactivated. Please contact support for assistance." });
-        }
-
-        staff.lastLogin = new Date();
-        await staff.save();
-
-        const staffData = {
-            staffId: staff._id,
-            role: staff.role
-        };
-
-        const token = jwt.sign(staffData, process.env.JWT_KEY, { expiresIn: '1h' });
-
-        return res.status(200).json({
-            message: "Login successful",
-            token: token,
-            user: {
-                staffId: staff.staffId,
-                name: staff.name,
-                role: staff.role,
-                email: staff.email,
-                age: staff.age,
-                address: staff.address,
-                isDisabled: staff.isDisabled,
-                isEmailVerified: staff.isEmailVerified,
-                lastLogin: staff.lastLogin
-            },
-        });
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ message: "Login failed" });
+    // ✅ Guard before touching any properties
+    if (!staff) {
+      return res.status(404).json({ message: "Invalid credentials" });
     }
+
+    // Optional debug, but safe:
+    // console.log(staff?.password);
+
+    if (staff.password == null) {
+      return res.status(403).json({ message: "Account not configured for login" });
+    }
+
+    // ✅ Compare safely
+    const isPasswordCorrect = await bcrypt.compare(String(password), String(staff.password));
+    if (!isPasswordCorrect) {
+      return res.status(403).json({ message: "Invalid credentials" });
+    }
+
+    if (staff.isDisable) {
+        
+      return res.status(403).json({
+        message: "Your account has been deactivated. Please contact support for assistance."
+      });
+    }
+
+    staff.lastLogin = new Date();
+    await staff.save();
+
+    const staffData = { staffId: staff._id, role: staff.role };
+    const token = jwt.sign(staffData, process.env.JWT_KEY, { expiresIn: "1h" });
+
+    return res.status(200).json({
+      message: "Login successful",
+      token: token,
+      user: {
+        staffId: staff.staffId,
+        name: staff.name,
+        role: staff.role,
+        email: staff.email,
+        age: staff.age,
+        address: staff.address,
+        isDisabled: staff.isDisable, // keeping your existing field names
+        isEmailVerified: staff.isEmailVerified,
+        lastLogin: staff.lastLogin
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Login failed" });
+  }
 }
 
 // Get all staff members

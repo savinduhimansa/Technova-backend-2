@@ -1,10 +1,12 @@
 import Order from "../models/Order.js";
 import Delivery from "../models/Delivery.js";
 
+const canManage = (req) =>
+  req.user && (req.user.role === "admin" || req.user.role === "salesManager");
+
 export const getDashboardStats = async (req, res) => {
-  if (!req.user || !["admin", "salesmanager"].includes(req.user.role)) {
-    return res.status(403).json({ message: "Not authorized" });
-  }
+  if (!canManage(req)) return res.status(403).json({ message: "Not authorized" });
+
   try {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);

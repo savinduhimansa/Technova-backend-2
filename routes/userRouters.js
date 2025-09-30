@@ -1,5 +1,6 @@
 import express from "express";
-
+import verifyJWT from "../middleware/auth.js";
+import { changePassword, getMyStaff, updateMyStaff } from "../controllers/userControllers.js";
 
 import {
     saveUser,
@@ -17,6 +18,8 @@ import {
     getStaffById,
     updateStaff,
     deleteStaff,
+    getMe,
+    updateMe
     // saveAdmin,
     // loginAdmin,
     // getAllAdmins,
@@ -43,6 +46,15 @@ userRouters.post('/logout', logout);
 userRouters.post("/user/register", saveUser); 
 userRouters.post("/user/login", loginUser);
 userRouters.post("/user/verify-otp", verifyOTP); 
+
+// Self-service profile
+userRouters.get("/user/me", verifyJWT, getMe);
+userRouters.put("/user/me", verifyJWT, updateMe);
+userRouters.post("api/auth/changePassword",changePassword);
+
+
+userRouters.get("/staff/me", verifyJWT, getMyStaff);
+userRouters.put("/staff/me", updateMyStaff);
 
 // Staff Routes
 userRouters.post("/staff", saveStaff);
