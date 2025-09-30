@@ -7,7 +7,6 @@ import {
   adminUpdateBuildRequest,
   adminDeleteBuildRequest
 } from "../controllers/buildRequestController.js";
-import verifyJWT from "../middleware/auth.js"; // if you want to protect
 
 const r = express.Router();
 
@@ -21,3 +20,4 @@ r.patch("/admin/:requestId", adminUpdateBuildRequest);
 r.delete("/admin/:requestId", adminDeleteBuildRequest);
 
 export default r;
+

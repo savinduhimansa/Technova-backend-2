@@ -20,6 +20,17 @@ import partsRouter from './routes/partsRouter.js';
 import buildRequestRouter from "./routes/buildRequestRouter.js";
 import dotenv from 'dotenv';
 import cors from 'cors';
+
+//import Servicemiddle from './middleware/Servicemiddle.js';
+import ServiceRoute from './routes/ServiceRoutes.js';
+import TicketRoutes from './routes/TicketRoutes.js';
+import RepairRoutes from './routes/RepairRoutes.js';
+
+import itDashboardRoutes from "./routes/itDashboardRoutes.js";
+import buildRoutes from "./routes/buildRoutes.js";
+
+
+
 dotenv.config();
 
 
@@ -55,6 +66,9 @@ app.use("/api", userRouters);
 app.use('/api/feedback', feedbackRouters); 
 app.use('/api/auth', authRoutes);
 
+app.use("/api/builds", buildRoutes);
+app.use("/api/parts", partsRouter);
+
 app.use(verifyJWT);
 
 
@@ -69,6 +83,13 @@ app.use("/api/suppliers", supplierRoutes);
 
 app.use("/api/parts", partsRouter);
 app.use("/api/build-requests", buildRequestRouter); 
+
+app.use("/api/product", productRouter)
+app.use('/api/services', ServiceRoute)
+app.use('/api/ticket', TicketRoutes)
+app.use('/api/repair',RepairRoutes )
+app.use("/api/dashboard", itDashboardRoutes);
+
 
 
 

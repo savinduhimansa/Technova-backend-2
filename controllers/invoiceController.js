@@ -19,10 +19,11 @@ export const generateInvoice = async (req, res) => {
     const count = await Invoice.countDocuments();
     const invoiceID = `INV-${String(count + 1).padStart(3, "0")}`;
 
+    // ✅ Use global order.discount instead of per-product discount
     const lines = order.products.map((p) => {
-      const unitPrice = Number(p?.product?.price || 0);
+      const unitPrice = Number(p?.product?.price || p.unitPrice || 0);
       const qty = Number(p?.quantity || 0);
-      const discount = Number(p?.discount || 0);
+      const discount = Number(order.discount || 0);   // 👈 global discount
       const lineTotal = unitPrice * qty * (1 - discount / 100);
 
       return {

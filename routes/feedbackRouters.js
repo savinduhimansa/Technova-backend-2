@@ -3,7 +3,7 @@ import {
   createFeedback,
   getAllFeedback,
   // ADD:
-  updateFeedback,
+  // updateFeedback,
   deleteFeedback,
 } from '../controllers/feedbackController.js';
 
@@ -18,7 +18,7 @@ router.get('/', getAllFeedback);
 // --- ADD: admin-only edit & delete
 // Use adminAuth if available: router.put('/:id', adminAuth, updateFeedback);
 //                            router.delete('/:id', adminAuth, deleteFeedback);
-router.put('/:id', updateFeedback);
+// router.put('/:id', updateFeedback);
 router.delete('/:id', deleteFeedback);
 
 export default router;
